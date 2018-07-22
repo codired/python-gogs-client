@@ -34,9 +34,29 @@ class GogsEntity(object):
             if param.default == attr.NOTHING:
                 args.append(json_get(parsed_json, param_name))
             # if it's a keyword argument
+            elif param.default is []:
+                continue
             else:
                 kwargs[param_name] = parsed_json.get(param_name, None)
+
         o = cls(*args, **kwargs)
+
+        for param in params:
+            param_name = param.name.lstrip('_')
+
+            if param.default is []:
+                arg = []
+                items = json_get(parsed_json, param_name)
+
+                for item in items:
+                    if 'converter' not in param.metadata:
+                        continue
+                    func = param.metadata['converter']
+                    arg.append(func(item))
+
+                setattr(o, param_name, arg)
+                o.json[param_name] = arg
+
         return o
 
 
@@ -412,3 +432,66 @@ class GogsTeam(GogsEntity):
     #:
     #: :type: str
     permission = attr.ib()
+
+
+@attr.s(frozen=False)
+class GogsTree(GogsEntity):
+    #: The commit id about the last commit
+    #:
+    #: :type: str
+    last_commit_id = attr.ib()
+
+    #: The commit message about the last commit
+    #:
+    #: :type: str
+    last_commit_msg = attr.ib()
+
+    #: The readme content for the repository
+    #:
+    #: :type: str
+    readme = attr.ib()
+
+    #: The file name of readme. for instance: readme.md
+    #:
+    #: :type: str
+    readme_name = attr.ib()
+
+    #: Checks is readme file is plain text or empty
+    #:
+    #: :type: bool
+    is_readme_text = attr.ib()
+
+    #: Committed files for given path
+    #:
+    #: :type: :class:`~GogsTree.File`
+    _files = attr.ib(init=False, default=[], metadata={'converter': lambda item: GogsTree.File.from_json(item)})
+
+    @property
+    def files(self):
+        return self._files
+
+    @files.setter
+    def files(self, files):
+        self._files = files
+
+    @attr.s(frozen=True)
+    class File(GogsEntity):
+        #: The file name
+        #:
+        #: :type: str
+        name = attr.ib()
+
+        #: The last commit id of current file or directory
+        #:
+        #: :type: str
+        commit_id = attr.ib()
+
+        #: Is this entity is a directory
+        #:
+        #: :type: bool
+        is_dir = attr.ib()
+
+        #: The file size of this entity
+        #:
+        #: :type: int
+        size = attr.ib()
