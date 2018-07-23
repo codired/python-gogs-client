@@ -2,7 +2,7 @@ import requests
 
 from gogs_client._implementation.http_utils import RelativeHttpRequestor, append_url
 from gogs_client.auth import Token
-from gogs_client.entities import GogsUser, GogsRepo, GogsBranch, GogsOrg, GogsTeam
+from gogs_client.entities import GogsUser, GogsRepo, GogsBranch, GogsOrg, GogsTeam, GogsTree
 
 
 class GogsApi(object):
@@ -177,6 +177,28 @@ class GogsApi(object):
         path = "/repos/{u}/{r}".format(u=username, r=repo_name)
         response = self.get(path, auth=auth)
         return GogsRepo.from_json(response.json())
+
+    def get_repo_tree(self, auth, username, repo_name, path):
+        """
+        Returns a the repository tree with name ``repo_name`` owned by
+        the user with username ``username`` and the path ``path``, path is optional so
+        in this case path will be the main source directory.
+
+        :param auth.Authentication auth: authentication object
+        :param str username: username of owner of repository
+        :param str repo_name: name of repository
+        :param str path: directory tree of repository
+        :return: a representation of the retrieved repository
+        :rtype: GogsRepo
+        :raises NetworkFailure: if there is an error communicating with the server
+        :raises ApiFailure: if the request cannot be serviced
+        """
+        data = {
+            "path": path,
+        }
+        path = "/repos/{u}/{r}/tree".format(u=username, r=repo_name)
+        response = self.get(path, auth=auth, data=data)
+        return GogsTree.from_json(response.json())
 
     def get_user_repos(self, auth, username):
         """
