@@ -194,10 +194,10 @@ class GogsApi(object):
         :raises ApiFailure: if the request cannot be serviced
         """
         data = {
-            "path": path,
+            "path": '' if path is None or path.strip(' ') else path,
         }
-        path = "/repos/{u}/{r}/tree".format(u=username, r=repo_name)
-        response = self.get(path, auth=auth, data=data)
+        path = "/repos/{u}/{r}/tree".format(u=username, r=repo_name, p=path)
+        response = self.get(path, auth=auth, params=data)
         return GogsTree.from_json(response.json())
 
     def get_user_repos(self, auth, username):
