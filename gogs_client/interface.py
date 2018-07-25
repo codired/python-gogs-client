@@ -189,16 +189,36 @@ class GogsApi(object):
         :param str repo_name: name of repository
         :param str path: directory tree of repository
         :return: a representation of the retrieved repository
-        :rtype: GogsRepo
+        :rtype: GogsTree
         :raises NetworkFailure: if there is an error communicating with the server
         :raises ApiFailure: if the request cannot be serviced
         """
-        data = {
-            "path": path,
+        params = {
+            "path": "" if path is None or path.strip(" ") else path,
         }
-        path = "/repos/{u}/{r}/tree".format(u=username, r=repo_name)
-        response = self.get(path, auth=auth, data=data)
+        path = "/repos/{u}/{r}/tree".format(u=username, r=repo_name, p=path)
+        response = self.get(path, auth=auth, params=params)
         return GogsTree.from_json(response.json())
+
+    def get_source_code(self, auth, username, repo_name, path, branch="master"):
+        """
+        Returns source code of given ``path`` for the repository with name ``repo_name``
+        owned by the user with username ``username``
+
+        :param auth.Authentication auth: authentication object
+        :param str username: username of owner of repository
+        :param str repo_name: name of repository
+        :param str path: file path of repository
+        :param str branch: target branch name of repository
+        :return: a representation of the source code that retrieved from repository
+        :rtype: Optional[str]
+        :raises NetworkFailure: if there is an error communicating with the server
+        :raises ApiFailure: if the request cannot be serviced
+        """
+        path = "/repos/{u}/{r}/raw/{b}/{p}".format(u=username, r=repo_name, p=path, b=branch)
+        response = self.get(path, auth=auth)
+
+        return None if response.status_code != 200 else response.text
 
     def get_user_repos(self, auth, username):
         """
